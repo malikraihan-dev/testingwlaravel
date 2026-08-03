@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>@yield('title', 'Workforce Pro')</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -30,7 +30,14 @@
             <span class="text-sm">Absensi Saya</span>
         </a>
         @endunless
+
+        <a href="{{ route('finance.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg font-bold transition-colors {{ request()->routeIs('finance.*') ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100' }}">
+            <span class="material-symbols-outlined">payments</span>
+            <span class="text-sm">Keuangan Saya</span>
+        </a>
+
         @if(auth()->user()->isAdmin())
+        <p class="px-4 pt-4 pb-1 text-xs font-bold text-slate-400 uppercase">Admin</p>
         <a href="{{ route('admin.users.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg font-bold transition-colors {{ request()->routeIs('admin.users.*') ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100' }}">
             <span class="material-symbols-outlined">badge</span>
             <span class="text-sm">Kelola User</span>
@@ -38,6 +45,10 @@
         <a href="{{ route('admin.attendances.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg font-bold transition-colors {{ request()->routeIs('admin.attendances.*') ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100' }}">
             <span class="material-symbols-outlined">calendar_month</span>
             <span class="text-sm">Kelola Absensi</span>
+        </a>
+        <a href="{{ route('admin.finance.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg font-bold transition-colors {{ request()->routeIs('admin.finance.*') ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100' }}">
+            <span class="material-symbols-outlined">account_balance_wallet</span>
+            <span class="text-sm">Kelola Keuangan</span>
         </a>
         @endif
     </nav>
