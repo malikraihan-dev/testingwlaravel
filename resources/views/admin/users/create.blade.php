@@ -20,19 +20,19 @@
         @csrf
         <div>
             <label class="block text-sm font-bold mb-1">Nama</label>
-            <input type="text" name="name" value="{{ old('name') }}" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none" required>
+            <input type="text" name="name" value="{{ old('name') }}" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl" required>
         </div>
         <div>
             <label class="block text-sm font-bold mb-1">Email</label>
-            <input type="email" name="email" value="{{ old('email') }}" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none" required>
+            <input type="email" name="email" value="{{ old('email') }}" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl" required>
         </div>
         <div>
             <label class="block text-sm font-bold mb-1">Password</label>
-            <input type="password" name="password" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none" required>
+            <input type="password" name="password" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl" required>
         </div>
         <div>
             <label class="block text-sm font-bold mb-1">Role</label>
-            <select name="role" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none" required>
+            <select name="role" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl" required>
                 <option value="user">User</option>
                 <option value="admin">Admin</option>
             </select>

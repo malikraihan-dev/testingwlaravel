@@ -6,6 +6,8 @@ use App\Models\Attendance;
 use App\Services\FaceMatcher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class AttendanceController extends Controller
 {
@@ -22,43 +24,50 @@ class AttendanceController extends Controller
         return view('attendance.index', compact('attendances', 'todayRecord'));
     }
 
-    public function checkIn(Request $request, FaceMatcher $faceMatcher)
+    public function checkIn(Request $request)
     {
-        $user = Auth::user();
         $today = now()->toDateString();
+        $user = Auth::user();
 
         $existing = Attendance::where('user_id', $user->id)
             ->whereDate('date', $today)
             ->first();
 
         if ($existing) {
-            return $this->respondError($request, 'Kamu sudah melakukan check-in hari ini.');
+            return back()->with('error', 'Kamu sudah melakukan check-in hari ini.');
         }
 
-        // If the user has enrolled a face, verification is mandatory for check-in.
-        if ($user->hasFaceEnrolled()) {
-            $request->validate([
-                'face_descriptor' => ['required', 'array', 'size:128'],
-                'face_descriptor.*' => ['numeric'],
-            ], [
-                'face_descriptor.required' => 'Verifikasi wajah diperlukan untuk check-in.',
-            ]);
-
-            if (! $faceMatcher->isMatch($user->face_descriptor, $request->input('face_descriptor'))) {
-                return $this->respondError($request, 'Verifikasi wajah gagal. Wajah tidak cocok dengan data terdaftar.');
-            }
+        // Verifikasi wajah sekarang WAJIB. Kalau belum daftar wajah, tolak di sini juga
+        // (bukan cuma disembunyikan di tampilan) supaya tidak bisa dilewati.
+        if (! $user->face_descriptor) {
+            return redirect()
+                ->route('attendance.face-enroll')
+                ->with('error', 'Kamu perlu mendaftarkan wajah terlebih dahulu sebelum bisa check-in.');
         }
+
+        $request->validate([
+            'descriptor' => ['required', 'array', 'size:128'],
+            'descriptor.*' => ['numeric'],
+            'photo' => ['nullable', 'string', 'max:2000000'],
+        ]);
+
+        if (! FaceMatcher::isMatch($user->face_descriptor, $request->input('descriptor'))) {
+            return back()->with('error', 'Verifikasi wajah gagal, wajah tidak cocok dengan data terdaftar. Check-in ditolak.');
+        }
+
+        $photoPath = $request->filled('photo')
+            ? $this->storeCheckInPhoto($request->input('photo'), $user->id)
+            : null;
 
         Attendance::create([
             'user_id' => $user->id,
             'date' => $today,
             'check_in' => now()->format('H:i:s'),
             'status' => 'hadir',
+            'photo_path' => $photoPath,
         ]);
 
-        $message = 'Check-in berhasil dicatat.'.($user->hasFaceEnrolled() ? ' (terverifikasi wajah)' : '');
-
-        return $this->respondSuccess($request, $message);
+        return back()->with('success', 'Check-in berhasil dicatat (wajah terverifikasi).');
     }
 
     public function checkOut(Request $request)
@@ -68,39 +77,41 @@ class AttendanceController extends Controller
             ->first();
 
         if (! $record) {
-            return $this->respondError($request, 'Kamu belum check-in hari ini.');
+            return back()->with('error', 'Kamu belum check-in hari ini.');
         }
 
         if ($record->check_out) {
-            return $this->respondError($request, 'Kamu sudah melakukan check-out hari ini.');
+            return back()->with('error', 'Kamu sudah melakukan check-out hari ini.');
         }
 
         $record->update([
             'check_out' => now()->format('H:i:s'),
         ]);
 
-        return $this->respondSuccess($request, 'Check-out berhasil dicatat.');
+        return back()->with('success', 'Check-out berhasil dicatat.');
     }
 
     /**
-     * Face check-in is submitted via fetch/JSON, plain check-in/out via normal form POST.
-     * Support both so existing non-face users are unaffected.
+     * Simpan snapshot foto (data URL base64 dari kamera) ke storage/app/public
+     * dan kembalikan path relatifnya untuk disimpan di kolom photo_path.
      */
-    private function respondError(Request $request, string $message)
+    private function storeCheckInPhoto(string $base64Image, int $userId): ?string
     {
-        if ($request->expectsJson() || $request->isJson()) {
-            return response()->json(['success' => false, 'message' => $message], 422);
+        if (! preg_match('/^data:image\/(\w+);base64,/', $base64Image, $matches)) {
+            return null;
         }
 
-        return back()->with('error', $message);
-    }
+        $extension = $matches[1] === 'jpeg' ? 'jpg' : $matches[1];
+        $data = substr($base64Image, strpos($base64Image, ',') + 1);
+        $decoded = base64_decode($data, true);
 
-    private function respondSuccess(Request $request, string $message)
-    {
-        if ($request->expectsJson() || $request->isJson()) {
-            return response()->json(['success' => true, 'message' => $message]);
+        if ($decoded === false) {
+            return null;
         }
 
-        return back()->with('success', $message);
+        $filename = 'attendance-photos/'.$userId.'-'.now()->format('Ymd-His').'-'.Str::random(6).'.'.$extension;
+        Storage::disk('public')->put($filename, $decoded);
+
+        return $filename;
     }
 }

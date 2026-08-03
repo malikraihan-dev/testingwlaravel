@@ -128,20 +128,20 @@
                     'Accept': 'application/json',
                     'X-CSRF-TOKEN': '{{ csrf_token() }}',
                 },
-                body: JSON.stringify({ face_descriptor: currentDescriptor }),
+                body: JSON.stringify({ descriptor: currentDescriptor }),
             });
 
-            const data = await res.json();
+            const data = await res.json().catch(() => ({}));
 
             if (res.ok && data.success) {
                 window.location.reload();
             } else {
-                statusEl.textContent = data.message || 'Verifikasi gagal, wajah tidak cocok.';
+                statusEl.textContent = data.message || data.errors?.descriptor?.[0] || 'Verifikasi gagal, wajah tidak cocok.';
                 verifyBtn.disabled = false;
                 verifyBtn.textContent = 'Verifikasi & Check-in';
             }
         } catch (e) {
-            statusEl.textContent = 'Terjadi kesalahan jaringan.';
+            statusEl.textContent = 'Terjadi kesalahan jaringan saat check-in. Silakan coba lagi.';
             verifyBtn.disabled = false;
             verifyBtn.textContent = 'Verifikasi & Check-in';
         }

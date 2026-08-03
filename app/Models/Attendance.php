@@ -16,6 +16,7 @@ class Attendance extends Model
         'check_out',
         'status',
         'notes',
+        'photo_path',
     ];
 
     protected function casts(): array
@@ -28,5 +29,10 @@ class Attendance extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function getPhotoUrlAttribute(): ?string
+    {
+        return $this->photo_path ? asset('storage/'.$this->photo_path) : null;
     }
 }

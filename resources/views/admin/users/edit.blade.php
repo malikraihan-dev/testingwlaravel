@@ -21,19 +21,19 @@
         @method('PUT')
         <div>
             <label class="block text-sm font-bold mb-1">Nama</label>
-            <input type="text" name="name" value="{{ old('name', $user->name) }}" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none" required>
+            <input type="text" name="name" value="{{ old('name', $user->name) }}" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl" required>
         </div>
         <div>
             <label class="block text-sm font-bold mb-1">Email</label>
-            <input type="email" name="email" value="{{ old('email', $user->email) }}" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none" required>
+            <input type="email" name="email" value="{{ old('email', $user->email) }}" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl" required>
         </div>
         <div>
-            <label class="block text-sm font-bold mb-1">Password <span class="text-slate-400 font-normal">(kosongkan jika tidak ganti)</span></label>
-            <input type="password" name="password" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none">
+            <label class="block text-sm font-bold mb-1">Password <span class="text-slate-400 font-normal">(kosongkan jika tidak ingin ganti)</span></label>
+            <input type="password" name="password" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl">
         </div>
         <div>
             <label class="block text-sm font-bold mb-1">Role</label>
-            <select name="role" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-900 focus:outline-none" required>
+            <select name="role" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl" required>
                 <option value="user" {{ $user->role === 'user' ? 'selected' : '' }}>User</option>
                 <option value="admin" {{ $user->role === 'admin' ? 'selected' : '' }}>Admin</option>
             </select>

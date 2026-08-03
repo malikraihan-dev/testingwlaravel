@@ -6,10 +6,10 @@
 <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
     <div>
         <h2 class="text-2xl font-bold tracking-tight">Kelola User</h2>
-        <p class="text-slate-500">Mengelola {{ $users->total() }} user terdaftar</p>
+        <p class="text-slate-500">Daftar akun yang bisa mengakses sistem</p>
     </div>
-    <a href="{{ route('admin.users.create') }}" class="px-5 py-2.5 bg-slate-900 text-white font-bold rounded-xl flex items-center gap-2 shadow-sm hover:opacity-90 transition text-sm">
-        <span class="material-symbols-outlined text-lg">person_add</span> Tambah User
+    <a href="{{ route('admin.users.create') }}" class="px-5 py-2.5 bg-slate-900 text-white font-bold rounded-xl flex items-center gap-2 text-sm">
+        <span class="material-symbols-outlined text-lg">add</span> Tambah User
     </a>
 </div>
 
@@ -18,46 +18,38 @@
         <table class="w-full text-left border-collapse">
             <thead class="bg-slate-50 border-b border-slate-200">
                 <tr>
-                    <th class="py-4 px-6 text-xs font-bold text-slate-500 uppercase">User</th>
-                    <th class="py-4 px-4 text-xs font-bold text-slate-500 uppercase">Role</th>
-                    <th class="py-4 px-6 text-xs font-bold text-slate-500 uppercase text-right">Aksi</th>
+                    <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Nama</th>
+                    <th class="px-4 py-4 text-xs font-bold text-slate-500 uppercase">Email</th>
+                    <th class="px-4 py-4 text-xs font-bold text-slate-500 uppercase">Role</th>
+                    <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase text-right">Aksi</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-                @foreach($users as $user)
-                <tr class="hover:bg-slate-50 transition-colors group">
-                    <td class="py-4 px-6">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold shrink-0">
-                                {{ strtoupper(substr($user->name, 0, 2)) }}
-                            </div>
-                            <div>
-                                <p class="font-bold">{{ $user->name }}</p>
-                                <p class="text-xs text-slate-500">{{ $user->email }}</p>
-                            </div>
-                        </div>
-                    </td>
-                    <td class="py-4 px-4">
-                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold {{ $user->role === 'admin' ? 'bg-slate-900 text-white' : 'bg-blue-100 text-blue-700' }}">
-                            {{ ucfirst($user->role) }}
-                        </span>
-                    </td>
-                    <td class="py-4 px-6 text-right">
-                        <div class="flex items-center justify-end gap-2">
-                            <a href="{{ route('admin.users.edit', $user) }}" class="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-600" title="Edit">
+                @forelse($users as $user)
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-6 py-4 font-medium">{{ $user->name }}</td>
+                        <td class="px-4 py-4 text-slate-600">{{ $user->email }}</td>
+                        <td class="px-4 py-4">
+                            <span class="px-2.5 py-1 rounded-full text-xs font-bold {{ $user->role === 'admin' ? 'bg-slate-900 text-white' : 'bg-blue-100 text-blue-700' }}">
+                                {{ ucfirst($user->role) }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-right whitespace-nowrap">
+                            <a href="{{ route('admin.users.edit', $user) }}" class="w-9 h-9 inline-flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-600" title="Edit">
                                 <span class="material-symbols-outlined text-lg">edit</span>
                             </a>
-                            <form method="POST" action="{{ route('admin.users.destroy', $user) }}" onsubmit="return confirm('Yakin hapus user ini?')">
+                            <form method="POST" action="{{ route('admin.users.destroy', $user) }}" class="inline" onsubmit="return confirm('Yakin hapus user ini?')">
                                 @csrf
                                 @method('DELETE')
-                                <button class="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-red-100 text-red-600" title="Hapus">
+                                <button class="w-9 h-9 inline-flex items-center justify-center rounded-lg hover:bg-red-100 text-red-600" title="Hapus">
                                     <span class="material-symbols-outlined text-lg">delete</span>
                                 </button>
                             </form>
-                        </div>
-                    </td>
-                </tr>
-                @endforeach
+                        </td>
+                    </tr>
+                @empty
+                    <tr><td colspan="4" class="px-6 py-8 text-center text-slate-400">Belum ada user.</td></tr>
+                @endforelse
             </tbody>
         </table>
     </div>
