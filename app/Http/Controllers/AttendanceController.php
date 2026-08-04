@@ -6,6 +6,8 @@ use App\Models\Attendance;
 use App\Services\FaceMatcher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class AttendanceController extends Controller
 {
@@ -35,11 +37,14 @@ class AttendanceController extends Controller
             return $this->respondError($request, 'Kamu sudah melakukan check-in hari ini.');
         }
 
+        $photoPath = null;
+
         // If the user has enrolled a face, verification is mandatory for check-in.
         if ($user->hasFaceEnrolled()) {
             $request->validate([
                 'face_descriptor' => ['required', 'array', 'size:128'],
                 'face_descriptor.*' => ['numeric'],
+                'photo' => ['nullable', 'string'],
             ], [
                 'face_descriptor.required' => 'Verifikasi wajah diperlukan untuk check-in.',
             ]);
@@ -47,12 +52,17 @@ class AttendanceController extends Controller
             if (! $faceMatcher->isMatch($user->face_descriptor, $request->input('face_descriptor'))) {
                 return $this->respondError($request, 'Verifikasi wajah gagal. Wajah tidak cocok dengan data terdaftar.');
             }
+
+            if ($request->filled('photo')) {
+                $photoPath = $this->storeBase64Photo($request->input('photo'));
+            }
         }
 
         Attendance::create([
             'user_id' => $user->id,
             'date' => $today,
             'check_in' => now()->format('H:i:s'),
+            'photo_path' => $photoPath,
             'status' => 'hadir',
         ]);
 
@@ -80,6 +90,30 @@ class AttendanceController extends Controller
         ]);
 
         return $this->respondSuccess($request, 'Check-out berhasil dicatat.');
+    }
+
+    /**
+     * Decode a base64 data URL image (from canvas.toDataURL) and store it on the public disk.
+     * Returns the stored relative path, or null if the input wasn't a valid image data URL.
+     */
+    private function storeBase64Photo(string $dataUrl): ?string
+    {
+        if (! preg_match('/^data:image\/(\w+);base64,/', $dataUrl, $matches)) {
+            return null;
+        }
+
+        $extension = $matches[1] === 'jpeg' ? 'jpg' : $matches[1];
+        $data = substr($dataUrl, strpos($dataUrl, ',') + 1);
+        $decoded = base64_decode($data);
+
+        if ($decoded === false) {
+            return null;
+        }
+
+        $path = 'attendance-photos/'.Str::uuid().'.'.$extension;
+        Storage::disk('public')->put($path, $decoded);
+
+        return $path;
     }
 
     /**

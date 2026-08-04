@@ -111,6 +111,14 @@
         }, 500);
     }
 
+    function captureSnapshot() {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+        return canvas.toDataURL('image/jpeg', 0.8);
+    }
+
     trigger.addEventListener('click', openModal);
     closeBtn.addEventListener('click', closeModal);
 
@@ -120,6 +128,8 @@
         verifyBtn.disabled = true;
         verifyBtn.textContent = 'Memverifikasi...';
 
+        const photo = captureSnapshot();
+
         try {
             const res = await fetch("{{ route('attendance.checkin') }}", {
                 method: 'POST',
@@ -128,7 +138,7 @@
                     'Accept': 'application/json',
                     'X-CSRF-TOKEN': '{{ csrf_token() }}',
                 },
-                body: JSON.stringify({ face_descriptor: currentDescriptor }),
+                body: JSON.stringify({ face_descriptor: currentDescriptor, photo: photo }),
             });
 
             const data = await res.json();
