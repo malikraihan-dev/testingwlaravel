@@ -111,6 +111,14 @@
         }, 500);
     }
 
+    function captureSnapshot() {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+        return canvas.toDataURL('image/jpeg', 0.8);
+    }
+
     trigger.addEventListener('click', openModal);
     closeBtn.addEventListener('click', closeModal);
 
@@ -120,6 +128,8 @@
         verifyBtn.disabled = true;
         verifyBtn.textContent = 'Memverifikasi...';
 
+        const photo = captureSnapshot();
+
         try {
             const res = await fetch("{{ route('attendance.checkin') }}", {
                 method: 'POST',
@@ -128,20 +138,20 @@
                     'Accept': 'application/json',
                     'X-CSRF-TOKEN': '{{ csrf_token() }}',
                 },
-                body: JSON.stringify({ descriptor: currentDescriptor }),
+                body: JSON.stringify({ face_descriptor: currentDescriptor, photo: photo }),
             });
 
-            const data = await res.json().catch(() => ({}));
+            const data = await res.json();
 
             if (res.ok && data.success) {
                 window.location.reload();
             } else {
-                statusEl.textContent = data.message || data.errors?.descriptor?.[0] || 'Verifikasi gagal, wajah tidak cocok.';
+                statusEl.textContent = data.message || 'Verifikasi gagal, wajah tidak cocok.';
                 verifyBtn.disabled = false;
                 verifyBtn.textContent = 'Verifikasi & Check-in';
             }
         } catch (e) {
-            statusEl.textContent = 'Terjadi kesalahan jaringan saat check-in. Silakan coba lagi.';
+            statusEl.textContent = 'Terjadi kesalahan jaringan.';
             verifyBtn.disabled = false;
             verifyBtn.textContent = 'Verifikasi & Check-in';
         }

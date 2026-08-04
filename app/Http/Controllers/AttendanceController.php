@@ -24,50 +24,51 @@ class AttendanceController extends Controller
         return view('attendance.index', compact('attendances', 'todayRecord'));
     }
 
-    public function checkIn(Request $request)
+    public function checkIn(Request $request, FaceMatcher $faceMatcher)
     {
-        $today = now()->toDateString();
         $user = Auth::user();
+        $today = now()->toDateString();
 
         $existing = Attendance::where('user_id', $user->id)
             ->whereDate('date', $today)
             ->first();
 
         if ($existing) {
-            return back()->with('error', 'Kamu sudah melakukan check-in hari ini.');
+            return $this->respondError($request, 'Kamu sudah melakukan check-in hari ini.');
         }
 
-        // Verifikasi wajah sekarang WAJIB. Kalau belum daftar wajah, tolak di sini juga
-        // (bukan cuma disembunyikan di tampilan) supaya tidak bisa dilewati.
-        if (! $user->face_descriptor) {
-            return redirect()
-                ->route('attendance.face-enroll')
-                ->with('error', 'Kamu perlu mendaftarkan wajah terlebih dahulu sebelum bisa check-in.');
+        $photoPath = null;
+
+        // If the user has enrolled a face, verification is mandatory for check-in.
+        if ($user->hasFaceEnrolled()) {
+            $request->validate([
+                'face_descriptor' => ['required', 'array', 'size:128'],
+                'face_descriptor.*' => ['numeric'],
+                'photo' => ['nullable', 'string'],
+            ], [
+                'face_descriptor.required' => 'Verifikasi wajah diperlukan untuk check-in.',
+            ]);
+
+            if (! $faceMatcher->isMatch($user->face_descriptor, $request->input('face_descriptor'))) {
+                return $this->respondError($request, 'Verifikasi wajah gagal. Wajah tidak cocok dengan data terdaftar.');
+            }
+
+            if ($request->filled('photo')) {
+                $photoPath = $this->storeBase64Photo($request->input('photo'));
+            }
         }
-
-        $request->validate([
-            'descriptor' => ['required', 'array', 'size:128'],
-            'descriptor.*' => ['numeric'],
-            'photo' => ['nullable', 'string', 'max:2000000'],
-        ]);
-
-        if (! FaceMatcher::isMatch($user->face_descriptor, $request->input('descriptor'))) {
-            return back()->with('error', 'Verifikasi wajah gagal, wajah tidak cocok dengan data terdaftar. Check-in ditolak.');
-        }
-
-        $photoPath = $request->filled('photo')
-            ? $this->storeCheckInPhoto($request->input('photo'), $user->id)
-            : null;
 
         Attendance::create([
             'user_id' => $user->id,
             'date' => $today,
             'check_in' => now()->format('H:i:s'),
-            'status' => 'hadir',
             'photo_path' => $photoPath,
+            'status' => 'hadir',
         ]);
 
-        return back()->with('success', 'Check-in berhasil dicatat (wajah terverifikasi).');
+        $message = 'Check-in berhasil dicatat.'.($user->hasFaceEnrolled() ? ' (terverifikasi wajah)' : '');
+
+        return $this->respondSuccess($request, $message);
     }
 
     public function checkOut(Request $request)
@@ -77,41 +78,63 @@ class AttendanceController extends Controller
             ->first();
 
         if (! $record) {
-            return back()->with('error', 'Kamu belum check-in hari ini.');
+            return $this->respondError($request, 'Kamu belum check-in hari ini.');
         }
 
         if ($record->check_out) {
-            return back()->with('error', 'Kamu sudah melakukan check-out hari ini.');
+            return $this->respondError($request, 'Kamu sudah melakukan check-out hari ini.');
         }
 
         $record->update([
             'check_out' => now()->format('H:i:s'),
         ]);
 
-        return back()->with('success', 'Check-out berhasil dicatat.');
+        return $this->respondSuccess($request, 'Check-out berhasil dicatat.');
     }
 
     /**
-     * Simpan snapshot foto (data URL base64 dari kamera) ke storage/app/public
-     * dan kembalikan path relatifnya untuk disimpan di kolom photo_path.
+     * Decode a base64 data URL image (from canvas.toDataURL) and store it on the public disk.
+     * Returns the stored relative path, or null if the input wasn't a valid image data URL.
      */
-    private function storeCheckInPhoto(string $base64Image, int $userId): ?string
+    private function storeBase64Photo(string $dataUrl): ?string
     {
-        if (! preg_match('/^data:image\/(\w+);base64,/', $base64Image, $matches)) {
+        if (! preg_match('/^data:image\/(\w+);base64,/', $dataUrl, $matches)) {
             return null;
         }
 
         $extension = $matches[1] === 'jpeg' ? 'jpg' : $matches[1];
-        $data = substr($base64Image, strpos($base64Image, ',') + 1);
-        $decoded = base64_decode($data, true);
+        $data = substr($dataUrl, strpos($dataUrl, ',') + 1);
+        $decoded = base64_decode($data);
 
         if ($decoded === false) {
             return null;
         }
 
-        $filename = 'attendance-photos/'.$userId.'-'.now()->format('Ymd-His').'-'.Str::random(6).'.'.$extension;
-        Storage::disk('public')->put($filename, $decoded);
+        $path = 'attendance-photos/'.Str::uuid().'.'.$extension;
+        Storage::disk('public')->put($path, $decoded);
 
-        return $filename;
+        return $path;
+    }
+
+    /**
+     * Face check-in is submitted via fetch/JSON, plain check-in/out via normal form POST.
+     * Support both so existing non-face users are unaffected.
+     */
+    private function respondError(Request $request, string $message)
+    {
+        if ($request->expectsJson() || $request->isJson()) {
+            return response()->json(['success' => false, 'message' => $message], 422);
+        }
+
+        return back()->with('error', $message);
+    }
+
+    private function respondSuccess(Request $request, string $message)
+    {
+        if ($request->expectsJson() || $request->isJson()) {
+            return response()->json(['success' => true, 'message' => $message]);
+        }
+
+        return back()->with('success', $message);
     }
 }

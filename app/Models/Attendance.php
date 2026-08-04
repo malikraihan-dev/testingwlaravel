@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class Attendance extends Model
 {
@@ -14,9 +15,9 @@ class Attendance extends Model
         'date',
         'check_in',
         'check_out',
+        'photo_path',
         'status',
         'notes',
-        'photo_path',
     ];
 
     protected function casts(): array
@@ -33,6 +34,6 @@ class Attendance extends Model
 
     public function getPhotoUrlAttribute(): ?string
     {
-        return $this->photo_path ? asset('storage/'.$this->photo_path) : null;
+        return $this->photo_path ? Storage::disk('public')->url($this->photo_path) : null;
     }
 }
