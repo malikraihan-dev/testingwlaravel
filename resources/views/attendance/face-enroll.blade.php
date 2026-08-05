@@ -6,7 +6,7 @@
 <div class="max-w-lg mx-auto">
     <h2 class="text-2xl font-bold tracking-tight mb-2">Aktifkan Verifikasi Wajah</h2>
     <p class="text-slate-500 mb-6 text-sm">
-        Wajah kamu akan direkam sebagai data fitur (128 angka), bukan foto. Data ini dipakai untuk mencocokkan wajah saat check-in.
+        Wajah kamu akan direkam sebagai data fitur (128 angka) beserta foto untuk referensi admin.
     </p>
 
     <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm text-center">
@@ -87,6 +87,14 @@ async function detectLoop() {
     }, 500);
 }
 
+function captureSnapshot() {
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/jpeg', 0.8);
+}
+
 captureBtn.addEventListener('click', async () => {
     if (!currentDescriptor) return;
 
@@ -100,7 +108,7 @@ captureBtn.addEventListener('click', async () => {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': '{{ csrf_token() }}',
             },
-            body: JSON.stringify({ face_descriptor: currentDescriptor }),
+            body: JSON.stringify({ face_descriptor: currentDescriptor, photo: captureSnapshot() }),
         });
 
         if (res.ok) {

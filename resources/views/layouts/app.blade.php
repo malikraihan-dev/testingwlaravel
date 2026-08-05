@@ -36,6 +36,11 @@
             <span class="text-sm">Keuangan Saya</span>
         </a>
 
+        <a href="{{ route('documents.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg font-bold transition-colors {{ request()->routeIs('documents.*') && !request()->routeIs('admin.*') ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100' }}">
+            <span class="material-symbols-outlined">folder_open</span>
+            <span class="text-sm">Dokumen</span>
+        </a>
+
         @if(auth()->user()->isAdmin())
         <p class="px-4 pt-4 pb-1 text-xs font-bold text-slate-400 uppercase">Admin</p>
         <a href="{{ route('admin.users.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg font-bold transition-colors {{ request()->routeIs('admin.users.*') ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100' }}">
@@ -46,9 +51,17 @@
             <span class="material-symbols-outlined">calendar_month</span>
             <span class="text-sm">Kelola Absensi</span>
         </a>
+        <a href="{{ route('admin.face.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg font-bold transition-colors {{ request()->routeIs('admin.face.*') ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100' }}">
+            <span class="material-symbols-outlined">face</span>
+            <span class="text-sm">Kelola Wajah</span>
+        </a>
         <a href="{{ route('admin.finance.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg font-bold transition-colors {{ request()->routeIs('admin.finance.*') ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100' }}">
             <span class="material-symbols-outlined">account_balance_wallet</span>
             <span class="text-sm">Kelola Keuangan</span>
+        </a>
+        <a href="{{ route('admin.documents.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg font-bold transition-colors {{ request()->routeIs('admin.documents.*') ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100' }}">
+            <span class="material-symbols-outlined">folder_managed</span>
+            <span class="text-sm">Kelola Dokumen</span>
         </a>
         @endif
     </nav>
