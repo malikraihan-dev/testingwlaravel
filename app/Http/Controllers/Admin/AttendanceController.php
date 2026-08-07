@@ -5,7 +5,11 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\User;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class AttendanceController extends Controller
 {
@@ -58,7 +62,7 @@ class AttendanceController extends Controller
     {
         $days = collect(range(6, 0))->map(fn ($i) => now()->subDays($i)->toDateString());
 
-        $labels = $days->map(fn ($d) => \Carbon\Carbon::parse($d)->format('d M'));
+        $labels = $days->map(fn ($d) => Carbon::parse($d)->format('d M'));
 
         $statuses = ['hadir', 'izin', 'sakit', 'alpa'];
         $datasets = [];
@@ -73,5 +77,74 @@ class AttendanceController extends Controller
             'labels' => $labels->values(),
             'datasets' => $datasets,
         ]);
+    }
+
+    private function monthlyRecords(Request $request)
+    {
+        $month = $request->input('month', now()->format('Y-m'));
+        [$year, $monthNum] = explode('-', $month);
+
+        $records = Attendance::with('user')
+            ->whereYear('date', $year)
+            ->whereMonth('date', $monthNum)
+            ->orderBy('date')
+            ->get();
+
+        $monthLabel = Carbon::createFromDate($year, $monthNum, 1)->translatedFormat('F Y');
+
+        return [$records, $month, $monthLabel];
+    }
+
+    public function exportExcel(Request $request)
+    {
+        [$records, $month, $monthLabel] = $this->monthlyRecords($request);
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Absensi');
+
+        $sheet->setCellValue('A1', 'Laporan Absensi - '.$monthLabel);
+        $sheet->mergeCells('A1:F1');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+
+        $headers = ['Tanggal', 'Nama', 'Check-in', 'Check-out', 'Status', 'Catatan'];
+        $sheet->fromArray($headers, null, 'A3');
+        $sheet->getStyle('A3:F3')->getFont()->setBold(true);
+
+        $row = 4;
+        foreach ($records as $r) {
+            $sheet->fromArray([
+                $r->date->format('d-m-Y'),
+                $r->user->name,
+                $r->check_in ?? '-',
+                $r->check_out ?? '-',
+                ucfirst($r->status),
+                $r->notes ?? '-',
+            ], null, "A{$row}");
+            $row++;
+        }
+
+        foreach (range('A', 'F') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        $filename = 'laporan-absensi-'.$month.'.xlsx';
+        $writer = new Xlsx($spreadsheet);
+
+        return response()->streamDownload(function () use ($writer) {
+            $writer->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+    }
+
+    public function exportPdf(Request $request)
+    {
+        [$records, $month, $monthLabel] = $this->monthlyRecords($request);
+
+        $pdf = Pdf::loadView('exports.attendance-pdf', compact('records', 'monthLabel'))
+            ->setPaper('a4', 'portrait');
+
+        return $pdf->download('laporan-absensi-'.$month.'.pdf');
     }
 }
