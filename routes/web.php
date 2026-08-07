@@ -67,6 +67,8 @@ Route::middleware('auth')->group(function () {
         Route::put('attendances/{attendance}', [AdminAttendanceController::class, 'update'])->name('attendances.update');
         Route::delete('attendances/{attendance}', [AdminAttendanceController::class, 'destroy'])->name('attendances.destroy');
         Route::get('attendances-chart-data', [AdminAttendanceController::class, 'chartData'])->name('attendances.chart-data');
+        Route::get('attendances-export/excel', [AdminAttendanceController::class, 'exportExcel'])->name('attendances.export.excel');
+        Route::get('attendances-export/pdf', [AdminAttendanceController::class, 'exportPdf'])->name('attendances.export.pdf');
 
         Route::post('ai/chat', [AiController::class, 'chat'])->name('ai.chat');
 
@@ -74,6 +76,8 @@ Route::middleware('auth')->group(function () {
         Route::put('finance/{finance}/approve', [AdminFinanceController::class, 'approve'])->name('finance.approve');
         Route::put('finance/{finance}/reject', [AdminFinanceController::class, 'reject'])->name('finance.reject');
         Route::delete('finance/{finance}', [AdminFinanceController::class, 'destroy'])->name('finance.destroy');
+        Route::get('finance-export/excel', [AdminFinanceController::class, 'exportExcel'])->name('finance.export.excel');
+        Route::get('finance-export/pdf', [AdminFinanceController::class, 'exportPdf'])->name('finance.export.pdf');
 
         // Kelola verifikasi wajah semua user
         Route::get('face', [AdminFaceController::class, 'index'])->name('face.index');
