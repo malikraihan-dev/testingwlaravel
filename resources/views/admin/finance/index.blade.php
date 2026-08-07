@@ -24,6 +24,25 @@
 </div>
 
 <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm mb-6">
+    <p class="text-xs font-bold text-slate-500 uppercase mb-3">Ekspor Laporan Bulanan</p>
+    <div class="flex flex-col md:flex-row gap-3 items-end">
+        <div class="flex-1">
+            <label class="block text-xs font-bold mb-1">Pilih Bulan</label>
+            <input type="month" id="export-month" value="{{ now()->format('Y-m') }}" class="px-4 py-2.5 border border-slate-300 rounded-xl text-sm w-full">
+        </div>
+        <div class="flex gap-2">
+            <button type="button" onclick="exportReport('excel')" class="px-5 py-2.5 bg-emerald-600 text-white font-bold rounded-xl text-sm flex items-center gap-2">
+                <span class="material-symbols-outlined text-lg">description</span> Unduh Excel
+            </button>
+            <button type="button" onclick="exportReport('pdf')" class="px-5 py-2.5 bg-red-600 text-white font-bold rounded-xl text-sm flex items-center gap-2">
+                <span class="material-symbols-outlined text-lg">picture_as_pdf</span> Unduh PDF
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm mb-6">
+    <p class="text-xs font-bold text-slate-500 uppercase mb-3">Filter Tabel</p>
     <form method="GET" class="flex flex-col md:flex-row gap-3">
         <select name="user_id" class="px-4 py-2.5 border border-slate-300 rounded-xl text-sm flex-1">
             <option value="">Semua User</option>
@@ -141,6 +160,14 @@ function rejectRecord(id) {
     }
     document.getElementById('reject-note-' + id).value = note;
     document.getElementById('reject-form-' + id).submit();
+}
+
+function exportReport(type) {
+    const month = document.getElementById('export-month').value;
+    const url = type === 'excel'
+        ? "{{ route('admin.finance.export.excel') }}"
+        : "{{ route('admin.finance.export.pdf') }}";
+    window.location.href = url + '?month=' + month;
 }
 </script>
 @endsection
